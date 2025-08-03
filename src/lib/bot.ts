@@ -1,17 +1,23 @@
-import { NextRequest } from 'next/server';
 import { Telegraf } from 'telegraf';
-import axios from 'axios';
 import { message } from 'telegraf/filters';
-import { Redis } from '@upstash/redis'
+import { redis } from './redis';
+import axios from 'axios';
 
-const redis = new Redis({
-    url: process.env.KV_REST_API_URL,
-    token: process.env.KV_REST_API_TOKEN,
-})
+if (!process.env.TELEGRAM_TOKEN) {
+  throw new Error('TELEGRAM_TOKEN is not set!');
+}
 
 const HTTPS_ENDPOINT = 'https://app.napkin.one/api/createThought';
 
-const bot = new Telegraf(process.env.TELEGRAM_TOKEN as string);
+export const bot = new Telegraf(process.env.TELEGRAM_TOKEN as string);
+
+// Define a type for your user data
+type UserData = {
+    token: string;
+    email?: string;
+    thoughts?: number;
+    user_id?: number;
+};
 
 bot.start((ctx) => {
     const userMessage = ctx.message.text;
@@ -43,14 +49,6 @@ bot.on(message('sticker'), async (ctx) => {
     const foo = await redis.get('foo');
     ctx.reply(`👍 ${foo}`);
 })
-
-// Define a type for your user data
-type UserData = {
-    token: string;
-    email?: string;
-    thoughts?: number;
-    user_id?: number;
-};
 
 bot.command('setToken', async (ctx) => {
     const user_name = ctx.message.from.username;
@@ -229,9 +227,5 @@ bot.on('text', async (ctx) => {
   
 });
 
-
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  await bot.handleUpdate(body);
-  return new Response(null, { status: 200 });
-}
+// Generic handler for other message types
+bot.on('message', (ctx) => ctx.reply('I can only process text messages for now.'));
