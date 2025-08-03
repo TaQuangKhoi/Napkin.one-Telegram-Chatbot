@@ -16,6 +16,7 @@ type UserData = {
     token: string;
     email?: string;
     thoughts?: number;
+    user_id?: number;
 };
 
 bot.start((ctx) => {
@@ -57,7 +58,7 @@ bot.command('setToken', async (ctx) => {
     }
 
     // Get user data and assert its type safely
-    const userData = await getUserData(user_name);
+    const userData = await getUserData(user_name, ctx.message.from.id);
 
     const value = getValueOfCommand(ctx.message.text, '/setToken');
     
@@ -79,7 +80,7 @@ bot.command('setEmail', async (ctx) => {
       return ctx.reply('⚠️ Please set a Telegram username first!');
     }
 
-    const userData = await getUserData(user_name);
+    const userData = await getUserData(user_name, ctx.message.from.id);
     const value = getValueOfCommand(ctx.message.text, '/setEmail');
     if (!value) {
       return ctx.reply('⚠️ Please provide an email!');
@@ -97,7 +98,7 @@ bot.command('countMyThoughts', async (ctx) => {
       return ctx.reply('⚠️ Please set a Telegram username first!');
     }
 
-    const userData = await getUserData(user_name);
+    const userData = await getUserData(user_name, ctx.message.from.id);
     const thoughts = userData.thoughts || 0;
 
     return ctx.reply(`You have created ${thoughts} thoughts!`);
@@ -133,13 +134,23 @@ My source code: [Napkin.one-Telegram-Chatbot](https://github.com/TaQuangKhoi/Nap
   `, { parse_mode: 'Markdown' }
 ));
 
-async function getUserData(username: string): Promise<UserData> {
+async function getUserData(username: string, userId?: number): Promise<UserData> {
     // Get user data and assert its type safely
     let userData = await redis.get<UserData>(username);
 
     // If userData doesn't exist, initialize it
     if (!userData) {
-        userData = { token: '', email: '' };
+        userData = { token: '', email: '', user_id: userId };
+        
+        // Add user to the users list for notifications if userId is provided
+        if (userId) {
+            await redis.sadd('users:list', username);
+        }
+    } else if (userId && !userData.user_id) {
+        // Update existing user data with user_id if not present
+        userData.user_id = userId;
+        await redis.set(username, userData);
+        await redis.sadd('users:list', username);
     }
 
     return userData;
@@ -165,7 +176,7 @@ bot.on('text', async (ctx) => {
     }
 
     // Get user data and assert its type safely
-    const userData = await getUserData(user_name);
+    const userData = await getUserData(user_name, ctx.message.from.id);
     if (userData.email?.length == 0 || userData.token == '') {
       return ctx.reply('⚠️ Please set a token and an email first using /setToken and /setEmail');
     }
