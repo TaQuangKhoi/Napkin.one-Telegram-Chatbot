@@ -8,6 +8,7 @@ type Status = {
   status: string;
   time: string;
   redis: string;
+  thoughts?: number;
 };
 
 export default function Home() {
@@ -17,11 +18,18 @@ export default function Home() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await axios.get('/api/status');
-        setStatus(response.data);
+        const [statusResponse, thoughtsResponse] = await Promise.all([
+          axios.get('/api/status'),
+          axios.get('/api/count/systemThoughts')
+        ]);
+        
+        setStatus({
+          ...statusResponse.data,
+          thoughts: thoughtsResponse.data.thoughts
+        });
       } catch (error) {
         console.error('Error fetching status:', error);
-        setStatus({ status: 'error', time: new Date().toISOString(), redis: 'error' });
+        setStatus({ status: 'error', time: new Date().toISOString(), redis: 'error', thoughts: 0 });
       } finally {
         setLoading(false);
       }
@@ -58,6 +66,10 @@ export default function Home() {
                 <>
                     <StatusIndicator service="Bot API" isOk={status?.status === 'ok'} />
                     <StatusIndicator service="Redis DB" isOk={status?.redis === 'ok'} />
+                    <div className='flex items-center gap-3'>
+                        <div className='w-4 h-4 rounded-full bg-blue-500' />
+                        <p className='font-mono'>Thoughts Count: <span className='font-bold'>{status?.thoughts ?? 0}</span></p>
+                    </div>
                 </>
             )}
         </div>
