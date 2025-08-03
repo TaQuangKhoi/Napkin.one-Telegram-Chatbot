@@ -1,0 +1,14 @@
+{
+  "output": {
+    "filePath": "target/vercel-telgram-output.md",
+    "style": "markdown"
+  },
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "docs/llms.motion.dev.txt",
+      "public"
+    ]
+  }
+}
