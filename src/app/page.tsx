@@ -48,7 +48,7 @@ export default function Home() {
           height={38}
           priority
         />
-        <h1 className='text-2xl font-bold'>Telegram Bot Template</h1>
+        <h1 className='text-2xl font-bold'>Napkin.one Telegram Bot</h1>
         <p className='text-zinc-600 dark:text-zinc-400'>Your bot is up and running. Check the status below.</p>
         
         <div className='mt-4 p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg w-full max-w-sm flex flex-col gap-2'>
