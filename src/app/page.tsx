@@ -1,120 +1,78 @@
 'use client';
 
-import Image from "next/image";
+import Image from 'next/image';
 import axios from 'axios';
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+
+type Status = {
+  status: string;
+  time: string;
+  redis: string;
+};
 
 export default function Home() {
-  const [thoughtsCount, setThoughtsCount] = useState(0);
+  const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchThoughts = async () => {
+    const fetchStatus = async () => {
       try {
-        const response = await axios.get("/api/count/systemThoughts");
-        setThoughtsCount(response.data.thoughts || 0);
-        setLoading(false); // Only set loading to false after first fetch
+        const response = await axios.get('/api/status');
+        setStatus(response.data);
       } catch (error) {
-        console.error("Error fetching thoughts count:", error);
+        console.error('Error fetching status:', error);
+        setStatus({ status: 'error', time: new Date().toISOString(), redis: 'error' });
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchThoughts(); // Initial fetch
-    const interval = setInterval(fetchThoughts, 5000); // Fetch every 5 seconds
-
-    return () => clearInterval(interval); // Cleanup on unmount
+    fetchStatus();
   }, []);
 
+  const StatusIndicator = ({ service, isOk }: { service: string; isOk: boolean }) => (
+    <div className='flex items-center gap-3'>
+        <div className={`w-4 h-4 rounded-full ${isOk ? 'bg-green-500' : 'bg-red-500'}`} />
+        <p className='font-mono'>{service}: <span className='font-bold'>{isOk ? 'Operational' : 'Error'}</span></p>
+    </div>
+  );
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
+    <div className='flex flex-col items-center justify-center min-h-screen p-8 font-sans'>
+      <main className='flex flex-col gap-6 items-center text-center bg-white dark:bg-zinc-900 p-10 rounded-lg shadow-md'>
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
+          className='dark:invert'
+          src='/next.svg'
+          alt='Next.js logo'
           width={180}
           height={38}
           priority
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            The system has {loading ? "..." : thoughtsCount} thoughts.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        <h1 className='text-2xl font-bold'>Telegram Bot Template</h1>
+        <p className='text-zinc-600 dark:text-zinc-400'>Your bot is up and running. Check the status below.</p>
+        
+        <div className='mt-4 p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg w-full max-w-sm flex flex-col gap-2'>
+            {loading ? (
+                <p>Loading status...</p>
+            ) : (
+                <>
+                    <StatusIndicator service="Bot API" isOk={status?.status === 'ok'} />
+                    <StatusIndicator service="Redis DB" isOk={status?.redis === 'ok'} />
+                </>
+            )}
         </div>
+
+        <a
+          className='mt-4 rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm h-10 px-5'
+          href={`/api/setWebHook`}
+          target='_blank'
+          rel='noopener noreferrer'
+        >
+          Setup/Update Webhook
+        </a>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      <footer className='absolute bottom-5 text-zinc-500 text-sm'>
+        Powered by Next.js, Vercel, and Telegraf.
       </footer>
     </div>
   );
